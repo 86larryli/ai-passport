@@ -15,6 +15,21 @@
 - 添加字库前评估 Flash 与内部 RAM 影响；ESP32-C3 无 PSRAM。
 - 不提交许可不允许分发的字库。
 
+### Claude Code Companion 字体
+
+由 [`tools/gen_lvgl_font.py`](../tools/gen_lvgl_font.py) 经 [`tools/gen_cc_fonts.sh`](../tools/gen_cc_fonts.sh) 生成，并由 `main/CMakeLists.txt` 编译。生成器使用 FreeType（freetype-py 2.5.1）栅格化，按 LVGL 9.5 的 PLAIN 4 bpp 格式打包位图，采用 ASCII 的 FORMAT0_TINY cmap 加上 SPARSE_TINY cmap，并重新读取写出的 C 文件逐像素校验每个字形。`tests/test_cc_fonts.py` 在静态门禁中无需 FreeType 即可复查结构与覆盖范围。
+
+| 文件 | 字号 | 字符集 | 字形数 | 位图字节 | 用途 |
+| --- | --- | --- | ---: | ---: | --- |
+| [`fonts/cc_font_cjk_16.c`](fonts/cc_font_cjk_16.c) | 16 px，行高 20，基线 4 | ASCII、全部 GB2312 字符（6,763 个汉字及符号、假名、希腊字母、西里尔字母）、Latin-1、通用标点、箭头、制表符、几何图形、中日韩标点、全角字符 | 7,782 | 920,484 | 所有动态文本（提示、问题、路径、回复） |
+| [`fonts/cc_font_ui_12.c`](fonts/cc_font_ui_12.c) | 12 px，行高 15，基线 3 | ASCII 加 16 个界面符号（箭头、对勾、乘号、圆点、省略号、白色方框、三角、圆形） | 111 | 3,070 | 固定的英文标签与提示 |
+| [`fonts/cc_font_ui_20.c`](fonts/cc_font_ui_20.c) | 20 px，行高 25，基线 5 | 与 12 px 字体相同 | 111 | 7,991 | 标题；中文回退到 16 px 字体 |
+| [`fonts/cc_font_num_40.c`](fonts/cc_font_num_40.c) | 40 px，行高 48，基线 9 | 数字、空格、冒号、连字符 | 13 | 3,107 | 配对码 |
+
+- 来源：Noto Sans SC Medium，取自 [notofonts/noto-cjk](https://github.com/notofonts/noto-cjk) 提交 `f8d157532fbfaeda587e826d4cd5b21a49186f7c` 的 `Sans/SubsetOTF/SC/NotoSansSC-Medium.otf`，SHA-256 `7633f5a016d4dd95e685a69633d818aabc4644c4b08e26bd35b1b30c45ed5dda`。许可：SIL Open Font License 1.1。OTF 文件未提交；下载后运行 `tools/gen_cc_fonts.sh <NotoSansSC-Medium.otf 路径>` 即可重新生成。
+- 源字体缺少 74 个请求的符号（少见的几何图形及部分装饰符号，如 U+2717）；每个生成文件的头部都列出了这些码位。固件会把任何未覆盖的字符替换为 U+25A1（白色方框）。
+- Flash：只读数据合计约 0.94 MB。不占静态 RAM：LVGL 直接从 Flash 读取字形位图。
+
 ## 图片（images）
 
 可复用的源图与生成的显示资产放在 `images/`。
